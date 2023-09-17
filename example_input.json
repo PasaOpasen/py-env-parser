@@ -1,0 +1,13 @@
+{
+    "var_a": "a",
+    "var_b_NUMBER": "1",
+    "var_c_FLAG": "yes",
+    "var_d_FLAG": "true",
+    "var_e_FLAG": "1",
+    "var_f_FLAG": "false",
+    "var_g_FLAG": "no",
+    "var_list_LIST": "a;b;c;d",
+    "var_json_JSON": "{\"a\": 1, \"b\": [1, 2]}",
+    "var_dict_nested__a__b__c": "1",
+    "var_dict_nested__a__d": "2"
+}
