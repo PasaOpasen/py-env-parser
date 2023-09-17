@@ -3,6 +3,7 @@ from typing import Optional, Dict, Any, Sequence
 
 import os
 import json
+import copy
 
 
 def _put_to_nested_dict(dct: Dict[str, Any], route: Sequence[str], value: Any):
@@ -40,6 +41,7 @@ def _rm_suffix(string: str, suffix: str) -> str:
 def parse_vars(
     prefix: str,
     source: Optional[Dict[str, str]] = None,
+    initial_vars: Optional[Dict[str, Any]] = None,
     suffix_int: str = '_NUMBER',
     suffix_bool: str = '_FLAG',
     suffix_list: str = '_LIST',
@@ -52,6 +54,7 @@ def parse_vars(
     Args:
         prefix: variables prefixes to select, empty means to select all variables
         source: variable source dict, None means environ
+        initial_vars: initial variables
         suffix_int: suffix which means to convert variable value to int
         suffix_bool: suffix for bool conversion
         suffix_list: suffix for List[str] conversion
@@ -64,9 +67,15 @@ def parse_vars(
 
     Notes:
         automatically removes prefix and suffixes from variables names
+
+    >>> init_vars = dict(a=1, b=2, c=[1, 2], d=dict(a=1))
+    >>> parse_vars(initial_vars=init_vars, source=dict(V_a='2', V_d__e='3'), prefix='V_')
+    {'a': '2', 'b': 2, 'c': [1, 2], 'd': {'a': 1, 'e': '3'}}
+    >>> parse_vars(initial_vars=init_vars, source=dict(V_a_NUMBER='2', V_d__e='3'), prefix='V_')
+    {'a': 2, 'b': 2, 'c': [1, 2], 'd': {'a': 1, 'e': '3'}}
     """
 
-    result = {}
+    result = copy.deepcopy(initial_vars or {})
     to_parse = source if source is not None else dict(os.environ)
 
     if prefix:
