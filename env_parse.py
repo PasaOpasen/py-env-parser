@@ -84,6 +84,7 @@ def parse_vars(
 
     result = dict(initial_vars or {})
     to_parse = source if source is not None else dict(os.environ)
+    processed_keys = set()
 
     if prefix:
         prefix_len = len(prefix)
@@ -118,12 +119,16 @@ def parse_vars(
             assert list_separator
             k = _rm_suffix(k, suffix_list_append)
             result[k] = (result[k] or []) + v.split(';')
+            processed_keys.add(k)
             continue
 
         result[k] = v
+        processed_keys.add(k)
 
     if dict_level_separator:
         for k, v in sorted(result.items()):
+            if k not in processed_keys:
+                continue
             route = k.split(dict_level_separator)
             if len(route) > 1 and all(route):  # split exists but without empty parts
                 _put_to_nested_dict(result, route, v)
