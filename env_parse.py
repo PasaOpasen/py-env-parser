@@ -47,9 +47,27 @@ def parse_vars(
     list_separator: str = ';',
     dict_level_separator: str = '__'
 ) -> Dict[str, Any]:
+    """
+    parses variable from str->str dictionary according to name rules
+    Args:
+        prefix: variables prefixes to select, empty means to select all variables
+        source: variable source dict, None means environ
+        suffix_int: suffix which means to convert variable value to int
+        suffix_bool: suffix for bool conversion
+        suffix_list: suffix for List[str] conversion
+        suffix_json: suffix for parsing variable value as json string
+        list_separator: separator in the list string for suffix_list
+        dict_level_separator: separator in the variable name for nested dictionary constructing
+
+    Returns:
+        new variables dictionary
+
+    Notes:
+        automatically removes prefix and suffixes from variables names
+    """
 
     result = {}
-    to_parse = source or dict(os.environ)
+    to_parse = source if source is not None else dict(os.environ)
 
     if prefix:
         prefix_len = len(prefix)
