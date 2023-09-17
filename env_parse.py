@@ -45,6 +45,7 @@ def parse_vars(
     suffix_int: str = '_NUMBER',
     suffix_bool: str = '_FLAG',
     suffix_list: str = '_LIST',
+    suffix_list_append: str = '_LIST_APPEND',
     suffix_json: str = '_JSON',
     list_separator: str = ';',
     dict_level_separator: str = '__'
@@ -58,6 +59,7 @@ def parse_vars(
         suffix_int: suffix which means to convert variable value to int
         suffix_bool: suffix for bool conversion
         suffix_list: suffix for List[str] conversion
+        suffix_list_append: like suffix_list but means appending to existing list instead of rewrite
         suffix_json: suffix for parsing variable value as json string
         list_separator: separator in the list string for suffix_list
         dict_level_separator: separator in the variable name for nested dictionary constructing
@@ -73,6 +75,8 @@ def parse_vars(
     {'a': '2', 'b': 2, 'c': [1, 2], 'd': {'a': 1, 'e': '3'}}
     >>> parse_vars(initial_vars=init_vars, source=dict(V_a_NUMBER='2', V_d__e='3'), prefix='V_')
     {'a': 2, 'b': 2, 'c': [1, 2], 'd': {'a': 1, 'e': '3'}}
+    >>> parse_vars(initial_vars=init_vars, source=dict(V_c_LIST_APPEND="3;4"), prefix='V_')
+    {'a': 1, 'b': 2, 'c': [1, 2, '3', '4'], 'd': {'a': 1}}
     """
 
     result = copy.deepcopy(initial_vars or {})
@@ -106,6 +110,12 @@ def parse_vars(
         elif k.endswith(suffix_json):
             k = _rm_suffix(k, suffix_json)
             v = json.loads(v)
+
+        elif k.endswith(suffix_list_append):
+            assert list_separator
+            k = _rm_suffix(k, suffix_list_append)
+            result[k] = (result[k] or []) + v.split(';')
+            continue
 
         result[k] = v
 
