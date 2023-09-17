@@ -125,7 +125,7 @@ def parse_vars(
     if dict_level_separator:
         for k, v in sorted(result.items()):
             route = k.split(dict_level_separator)
-            if len(route) > 1:
+            if len(route) > 1 and all(route):  # split exists but without empty parts
                 _put_to_nested_dict(result, route, v)
                 result.pop(k)
 
