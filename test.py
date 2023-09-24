@@ -11,6 +11,9 @@ def read_json(path: str):
     )
 
 
+def save_json(path: str, content):
+    Path(path).write_text(json.dumps(content), encoding='utf-8')
+
 def test():
 
     inpath = './example_input.json'
@@ -24,5 +27,18 @@ def test():
     assert i == read_json(outpath)
 
 
+def test_heavy():
+
+    inpath = './example_heavy_input.json'
+    outpath = './example_heavy_output.json'
+    vars_path = './example_heavy_inits.json'
+
+    i = parse_vars(
+        prefix='V_',
+        source=read_json(inpath),
+        initial_vars=read_json(vars_path)
+    )
+
+    assert i == read_json(outpath)
 
 

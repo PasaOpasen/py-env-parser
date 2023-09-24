@@ -9,18 +9,67 @@ import json
 import copy
 
 
-def _put_to_nested_dict(dct: Dict[str, Any], route: Sequence[str], value: Any):
+#region CUSTOM EXCEPTIONS
+
+class ListAppendException(Exception):
+    pass
+
+
+class BreakingRouteException(ListAppendException):
+    pass
+
+
+class NoListAppendToException(ListAppendException):
+    pass
+
+
+class TargetListTypeError(ListAppendException):
+    pass
+
+
+class InputListTypeError(ListAppendException):
+    pass
+
+#endregion
+
+
+#region UTILS
+
+def _put_to_nested_dict(
+    dct: Dict[str, Any],
+    route: Sequence[str],
+    value: Any,
+    list_append: bool = False
+):
     """
     puts key-value pair in the nested dict
     Args:
         dct:
-        route: keys route to the value
+        route: keys route to the value in the dictionary
         value:
+        list_append: if True, checks whether the initial value exists and appends current value to it
 
     >>> d = {}
     >>> _put_to_nested_dict(d, route=('a', 'b', 'c'), value=1)
     >>> d
     {'a': {'b': {'c': 1}}}
+    >>> try:
+    ...     _put_to_nested_dict(d, route=('b', 'e'), value=1, list_append=True)
+    ... except BreakingRouteException: pass
+    >>> try:
+    ...     _put_to_nested_dict(d, route=('a', 'b', 'e'), value=1, list_append=True)
+    ... except NoListAppendToException: pass
+    >>> _put_to_nested_dict(d, route=('a', 'b', 'e'), value='just init')
+    >>> try:
+    ...     _put_to_nested_dict(d, route=('a', 'b', 'e'), value=1, list_append=True)
+    ... except TargetListTypeError: pass
+    >>> _put_to_nested_dict(d, route=('a', 'b', 'e'), value=['just init'])
+    >>> try:
+    ...     _put_to_nested_dict(d, route=('a', 'b', 'e'), value=1, list_append=True)
+    ... except InputListTypeError: pass
+    >>> _put_to_nested_dict(d, route=('a', 'b', 'e'), value=[1], list_append=True)
+    >>> d
+    {'a': {'b': {'c': 1, 'e': ['just init', 1]}}}
     """
 
     assert route
@@ -28,13 +77,30 @@ def _put_to_nested_dict(dct: Dict[str, Any], route: Sequence[str], value: Any):
     k = route[0]
 
     if len(route) == 1:
-        dct[k] = value
+        if list_append:
+            if k not in dct:
+                raise NoListAppendToException('no initial list append to')
+            lst = dct[k]
+            if not isinstance(lst, list):
+                raise TargetListTypeError(
+                    f'initial list append to -- is exactly {type(lst).__qualname__}, not list'
+                )
+            if not isinstance(value, list):
+                raise InputListTypeError(
+                    f'gotten list to append is {type(value).__qualname__}, not list'
+                )
+            lst.extend(value)  # append after successful checks
+        else:  # usual case
+            dct[k] = value
+
         return
 
     if k not in dct:
+        if list_append:
+            raise BreakingRouteException('target dict route breaks, no list append to')
         dct[k] = {}
 
-    _put_to_nested_dict(dct[k], route[1:], value)
+    _put_to_nested_dict(dct[k], route[1:], value, list_append=list_append)
 
 
 def _rm_suffix(string: str, suffix: str) -> str:
@@ -43,6 +109,8 @@ def _rm_suffix(string: str, suffix: str) -> str:
     'var'
     """
     return string[:-len(suffix)]
+
+#endregion
 
 
 def parse_vars(
@@ -88,7 +156,6 @@ def parse_vars(
 
     result = dict(initial_vars or {})
     to_parse = source if source is not None else dict(os.environ)
-    processed_keys = set()
 
     if prefix:
         prefix_len = len(prefix)
@@ -100,45 +167,57 @@ def parse_vars(
     # first loop with simple transformations
     #
     for k, v in sorted(to_parse.items()):
-        if k.endswith(suffix_int):
-            k = _rm_suffix(k, suffix_int)
-            v = int(v)
-        elif k.endswith(suffix_list):
-            assert list_separator
-            k = _rm_suffix(k, suffix_list)
-            v = v.split(';')
-        elif k.endswith(suffix_bool):
-            k = _rm_suffix(k, suffix_bool)
-            if v in ('yes', 'Yes', 'YES', 'True', 'true', 'TRUE', '1'):
-                v = True
-            elif v in ('no', 'No', 'NO', 'False', 'false', 'FALSE', '0'):
-                v = False
-            else:
-                raise ValueError(
-                    f"unknown bool-convertible value {v} for variable {prefix}{k}{suffix_bool}"
-                )
-        elif k.endswith(suffix_json):
-            k = _rm_suffix(k, suffix_json)
-            v = json.loads(v)
 
-        elif k.endswith(suffix_list_append):
+        k_orig = prefix + k
+        v_orig = v
+
+        progress = True
+        while progress:  # while it is being converted by simple keys
+            if k.endswith(suffix_int):
+                k = _rm_suffix(k, suffix_int)
+                v = int(v)
+            elif k.endswith(suffix_list):
+                assert list_separator
+                k = _rm_suffix(k, suffix_list)
+                v = v.split(';')
+            elif k.endswith(suffix_bool):
+                k = _rm_suffix(k, suffix_bool)
+                if v in ('yes', 'Yes', 'YES', 'True', 'true', 'TRUE', '1'):
+                    v = True
+                elif v in ('no', 'No', 'NO', 'False', 'false', 'FALSE', '0'):
+                    v = False
+                else:
+                    raise ValueError(
+                        f"unknown bool-convertible value {v} for variable {prefix}{k}{suffix_bool} "
+                        f"({k_orig}={v_orig})"
+                    )
+            elif k.endswith(suffix_json):
+                k = _rm_suffix(k, suffix_json)
+                v = json.loads(v)
+
+            else:  # cannot convert further, stop loop
+                progress = False
+
+        #
+        # more heavy logic
+        #
+        list_append = k.endswith(suffix_list_append)
+        if list_append:
             assert list_separator
             k = _rm_suffix(k, suffix_list_append)
-            result[k] = (result[k] or []) + v.split(';')
-            processed_keys.add(k)
-            continue
+            if isinstance(v, str):
+                v = v.split(';')
 
-        result[k] = v
-        processed_keys.add(k)
-
-    if dict_level_separator:
-        for k, v in sorted(result.items()):
-            if k not in processed_keys:
-                continue
+        route = [k]  # initial route to put the value
+        if dict_level_separator:
             route = k.split(dict_level_separator)
-            if len(route) > 1 and all(route):  # split exists but without empty parts
-                _put_to_nested_dict(result, route, v)
-                result.pop(k)
+
+        if route and all(route):  # exists but without empty parts
+            try:
+                _put_to_nested_dict(result, route, v, list_append=list_append)
+            except ListAppendException as e:
+                e.args = (f"{k_orig}={v_orig}\n{e.args[0]}",)
+                raise e
 
     return result
 
