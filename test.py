@@ -14,6 +14,7 @@ def read_json(path: str):
 def save_json(path: str, content):
     Path(path).write_text(json.dumps(content), encoding='utf-8')
 
+
 def test():
 
     inpath = './example_input.json'
