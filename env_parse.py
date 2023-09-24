@@ -38,6 +38,10 @@ def _put_to_nested_dict(dct: Dict[str, Any], route: Sequence[str], value: Any):
 
 
 def _rm_suffix(string: str, suffix: str) -> str:
+    """
+    >>> _rm_suffix('var_with_suffix', suffix='_with_suffix')
+    'var'
+    """
     return string[:-len(suffix)]
 
 
@@ -110,7 +114,9 @@ def parse_vars(
             elif v in ('no', 'No', 'NO', 'False', 'false', 'FALSE', '0'):
                 v = False
             else:
-                raise ValueError(f"unknown bool value {v} for variable {prefix}{k}{suffix_bool}")
+                raise ValueError(
+                    f"unknown bool-convertible value {v} for variable {prefix}{k}{suffix_bool}"
+                )
         elif k.endswith(suffix_json):
             k = _rm_suffix(k, suffix_json)
             v = json.loads(v)
