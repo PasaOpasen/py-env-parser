@@ -179,7 +179,7 @@ def parse_vars(
             elif k.endswith(suffix_list):
                 assert list_separator
                 k = _rm_suffix(k, suffix_list)
-                v = v.split(';')
+                v = v.split(list_separator)
             elif k.endswith(suffix_bool):
                 k = _rm_suffix(k, suffix_bool)
                 if v in ('yes', 'Yes', 'YES', 'True', 'true', 'TRUE', '1'):
@@ -206,7 +206,7 @@ def parse_vars(
             assert list_separator
             k = _rm_suffix(k, suffix_list_append)
             if isinstance(v, str):
-                v = v.split(';')
+                v = v.split(list_separator)
 
         route = [k]  # initial route to put the value
         if dict_level_separator:
