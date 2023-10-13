@@ -161,6 +161,7 @@ def parse_vars(
         prefix_len = len(prefix)
         to_parse = {
             k[prefix_len:]: v for k, v in to_parse.items()
+            if k.startswith(prefix)
         }
 
     #
