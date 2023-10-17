@@ -187,6 +187,8 @@ def parse_vars(
                     v = True
                 elif v in ('no', 'No', 'NO', 'False', 'false', 'FALSE', '0'):
                     v = False
+                elif v in ('None', 'null', 'NULL'):
+                    v = None
                 else:
                     raise ValueError(
                         f"unknown bool-convertible value {v} for variable {prefix}{k}{suffix_bool} "
