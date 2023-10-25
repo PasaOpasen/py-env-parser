@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 import json
 
-from env_parse import parse_vars
+from env2dict import parse_vars
 
 _CUR_DIR = os.path.dirname(__file__)
 
