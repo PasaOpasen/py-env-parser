@@ -6,6 +6,7 @@
     "var_e_FLAG": "1",
     "var_f_FLAG": "false",
     "var_g_FLAG": "no",
+    "var_null_FLAG": "null",
     "var_list_LIST": "a;b;c;d",
     "var_json_JSON": "{\"a\": 1, \"b\": [1, 2]}",
     "var_dict_nested__a__b__c": "1",

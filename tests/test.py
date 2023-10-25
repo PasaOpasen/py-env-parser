@@ -1,8 +1,11 @@
 
+import os
 from pathlib import Path
 import json
 
 from env_parse import parse_vars
+
+_CUR_DIR = os.path.dirname(__file__)
 
 
 def read_json(path: str):
@@ -15,10 +18,14 @@ def save_json(path: str, content):
     Path(path).write_text(json.dumps(content), encoding='utf-8')
 
 
+def get_file(name: str) -> str:
+    return os.path.join(_CUR_DIR, name)
+
+
 def test():
 
-    inpath = './example_input.json'
-    outpath = './example_output.json'
+    inpath = get_file('example_input.json')
+    outpath = get_file('example_output.json')
 
     i = parse_vars(
         prefix='var_',
@@ -30,9 +37,9 @@ def test():
 
 def test_heavy():
 
-    inpath = './example_heavy_input.json'
-    outpath = './example_heavy_output.json'
-    vars_path = './example_heavy_inits.json'
+    inpath = get_file('example_heavy_input.json')
+    outpath = get_file('example_heavy_output.json')
+    vars_path = get_file('example_heavy_inits.json')
 
     i = parse_vars(
         prefix='V_',
