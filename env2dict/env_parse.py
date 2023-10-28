@@ -130,7 +130,7 @@ def parse_vars(
     Args:
         prefix: variables prefixes to select, empty means to select all variables
         source: variable source dict, None means environ
-        initial_vars: initial variables
+        initial_vars: initial variables (necessary for cases such u need to update existing dictionaries)
         suffix_int: suffix which means to convert variable value to int
         suffix_bool: suffix for bool conversion
         suffix_list: suffix for List[str] conversion
