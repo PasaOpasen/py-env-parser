@@ -1,1 +1,6 @@
 pytest
+
+
+setuptools
+wheel
+twine
