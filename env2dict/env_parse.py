@@ -118,6 +118,7 @@ def parse_vars(
     source: Optional[Dict[str, str]] = None,
     initial_vars: Optional[Dict[str, Any]] = None,
     suffix_int: str = '_NUMBER',
+    suffix_float: str = '_FLOAT',
     suffix_bool: str = '_FLAG',
     suffix_list: str = '_LIST',
     suffix_list_append: str = '_LIST_APPEND',
@@ -132,6 +133,7 @@ def parse_vars(
         source: variable source dict, None means environ
         initial_vars: initial variables (necessary for cases such u need to update existing dictionaries)
         suffix_int: suffix which means to convert variable value to int
+        suffix_float: suffix which means to convert variable value to float
         suffix_bool: suffix for bool conversion
         suffix_list: suffix for List[str] conversion
         suffix_list_append: like suffix_list but means appending to existing list instead of rewrite
@@ -143,7 +145,8 @@ def parse_vars(
         new variables dictionary
 
     Notes:
-        automatically removes prefix and suffixes from variables names
+        - automatically removes prefix and suffixes from variables names before putting
+        - changes initial_vars if received; to not change -- just perform copy.deepcopy before using it in the function
 
     >>> init_vars = dict(a=1, b=2, c=[1, 2], d=dict(a=1))
     >>> parse_vars(initial_vars=copy.deepcopy(init_vars), source=dict(V_a='2', V_d__e='3'), prefix='V_')
@@ -177,6 +180,9 @@ def parse_vars(
             if k.endswith(suffix_int):
                 k = _rm_suffix(k, suffix_int)
                 v = int(v)
+            elif k.endswith(suffix_float):
+                k = _rm_suffix(k, suffix_float)
+                v = float(v)
             elif k.endswith(suffix_list):
                 assert list_separator
                 k = _rm_suffix(k, suffix_list)

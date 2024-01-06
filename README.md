@@ -28,6 +28,7 @@ To use it, u need to define environment variables matches the pattern: **Prefix*
 * *Body* is the name of the target configuration parameter
 * **OperationSuffix** is the one of next available suffixes (by default, but u can change your defaults):
   * `_NUMBER` to convert variable value to integer (environment variables are always strings)
+  * `_FLOAT` to convert variable value to float
   * `_FLAG` to convert variable value to `optional[boolean]` at that values:
     *  `1`/`yes`/`Yes`/`True`/`true` equal `true`
     *  `0`/`no`/`No`/`False`/`false` equal `false`
