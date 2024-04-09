@@ -19,7 +19,7 @@ pip install env2dict
 
 ## About
 
-This small package provides an ability of easy setting/overriding Python variables from environment. It is expected that u will use to override your configuration data without changing configuration files itself, what is especially useful for containers-oriented applications.
+This small package provides an ability of easy setting/overriding Python variables from environment. It is expected that u will use it to override your configuration data without changing configuration files itself, what is especially useful for containers-oriented applications.
 
 ## Syntax
 
@@ -38,13 +38,13 @@ To use it, u need to define environment variables matches the pattern: **Prefix*
   * `_JSON` means to parse variable value as json string
   * no suffix means that no conversion will be performed, so variable value will stay a string
 
-Moreover, u can put nested dicts values using `__` separator in the environment variable name.
+Moreover, u can put nested dicts values using `__` separator (or other on your choice) in the environment variable name.
 
 Note also that u can combine these suffixes to perform more complicated transformations.
 
 ## Examples
 
-* env variable `DD_S_COUNT_NUMBER=10` will be converted to `S_COUNT=10` Python object
+* env variable `DD_S_COUNT_NUMBER=10` (with prefix `DD_` conversation) will be converted to `S_COUNT=10` Python object
 * `DD_S_COUNT=10` 🠚 `S_COUNT="10"`
 * `DD_USE_THIS_FLAG=yes` 🠚 `USE_THIS=True`
 * `DD_USE_THIS_FLAG=true` 🠚 `USE_THIS=True`
