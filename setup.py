@@ -1,4 +1,6 @@
 
+from pathlib import Path
+
 import setuptools
 
 with open("README.md", "r") as fh:
@@ -6,7 +8,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="env2dict", 
-    version="0.0.3",
+    version=Path('version.txt').read_text(encoding='utf-8').strip(),
     author="Demetry Pascal",
     author_email="qtckpuhdsa@gmail.com",
     maintainer='Demetry Pascal',
