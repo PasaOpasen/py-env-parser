@@ -110,7 +110,22 @@ def _rm_suffix(string: str, suffix: str) -> str:
     """
     return string[:-len(suffix)]
 
+
+def _translate_str(string: str, replaces: Dict[str, str]) -> str:
+    """
+    >>> _translate_str('12345678', {'1': 'a', '234': 'b'})
+    'ab5678'
+    """
+    for k, v in replaces.items():
+        string = string.replace(k, v)
+    return string
+
 #endregion
+
+
+DEFAULT_NAMES_REPLACES: Dict[str, str] = {
+    '0dash0': '-'
+}
 
 
 def parse_vars(
@@ -124,7 +139,8 @@ def parse_vars(
     suffix_list_append: str = '_LIST_APPEND',
     suffix_json: str = '_JSON',
     list_separator: str = ';',
-    dict_level_separator: str = '__'
+    dict_level_separator: str = '__',
+    names_replaces: Optional[Dict[str, str]] = None
 ) -> Dict[str, Any]:
     """
     parses variable from str->str dictionary according to name rules
@@ -140,6 +156,9 @@ def parse_vars(
         suffix_json: suffix for parsing variable value as json string
         list_separator: separator in the list string for suffix_list
         dict_level_separator: separator in the variable name for nested dictionary constructing
+        names_replaces: map { symbols -> symbols } to convert initial variable names before translation;
+            useful in cases such as providing dictionary keys like 'osd-1' through environment;
+            None DOES NOT disable this feature but activates some defaults; use empty dict to disable
 
     Returns:
         new variables dictionary
@@ -165,6 +184,13 @@ def parse_vars(
         to_parse = {
             k[prefix_len:]: v for k, v in to_parse.items()
             if k.startswith(prefix)
+        }
+
+    if names_replaces is None:
+        names_replaces = DEFAULT_NAMES_REPLACES
+    if names_replaces:
+        to_parse = {
+            _translate_str(k, names_replaces): v for k, v in to_parse.items()
         }
 
     #
