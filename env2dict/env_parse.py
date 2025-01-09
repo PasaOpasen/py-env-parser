@@ -123,7 +123,7 @@ def _translate_str(string: str, replaces: Dict[str, str]) -> str:
 
 def convert_key_value(
     key: str,
-    value: str,
+    value: str = ...,
     label: str = '',
 
     suffix_int: str = '_NUMBER',
@@ -137,7 +137,7 @@ def convert_key_value(
     converts string key=value pair to shorter key and cast value according to cast suffixes
     Args:
         key:
-        value:
+        value: string value; Ellipsis means to use actual key as value
         label: this pair label to show in error cases
         suffix_int:
         suffix_float:
@@ -155,6 +155,11 @@ def convert_key_value(
     >>> assert _('a_NUMBER', '1') == ('a', 1)
     >>> assert _('a_LIST', '1;2;3') == ('a', ['1', '2', '3'])
     >>> assert _('a_NUMBER_FLAG', 'YES') == ('a', 1)
+
+    >>> assert _('1')[1] == '1'
+    >>> assert _('1_NUMBER')[1] == 1
+    >>> #assert _('Yes_NUMBER')[1] == 1
+    >>> assert _('Yes_FLAG')[1] is True
     """
 
     k = key
@@ -162,18 +167,25 @@ def convert_key_value(
     label = label or f'({k}={v})'
 
     while True:  # while it is being converted by simple keys
+        # if not isinstance(k, str):
+        #     break
+        
         if k.endswith(suffix_int):
             k = _rm_suffix(k, suffix_int)
+            v = k if v is Ellipsis else v
             v = int(v)
         elif k.endswith(suffix_float):
             k = _rm_suffix(k, suffix_float)
+            v = k if v is Ellipsis else v
             v = float(v)
         elif k.endswith(suffix_list):
             assert list_separator
             k = _rm_suffix(k, suffix_list)
+            v = k if v is Ellipsis else v
             v = v.split(list_separator)
         elif k.endswith(suffix_bool):
             k = _rm_suffix(k, suffix_bool)
+            v = k if v is Ellipsis else v
             if v in ('yes', 'Yes', 'YES', 'True', 'true', 'TRUE', '1'):
                 v = True
             elif v in ('no', 'No', 'NO', 'False', 'false', 'FALSE', '0'):
@@ -184,9 +196,11 @@ def convert_key_value(
                 raise ValueError(f"unknown bool-convertible value {v} {label}")
         elif k.endswith(suffix_json):
             k = _rm_suffix(k, suffix_json)
+            v = k if v is Ellipsis else v
             v = json.loads(v)
 
         else:  # cannot convert further, stop loop
+            v = k if v is Ellipsis else v
             break
 
     return k, v
