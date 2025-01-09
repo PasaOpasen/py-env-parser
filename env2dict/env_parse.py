@@ -121,6 +121,57 @@ def _translate_str(string: str, replaces: Dict[str, str]) -> str:
     return string
 
 
+def convert_key_value_step(
+    key: str,
+    value: str = ...,
+    label: str = '',
+
+    suffix_int: str = '_NUMBER',
+    suffix_float: str = '_FLOAT',
+    suffix_bool: str = '_FLAG',
+    suffix_list: str = '_LIST',
+    suffix_json: str = '_JSON',
+    list_separator: str = ';',
+) -> Tuple[str, Any]:
+
+    k = key
+    v = value
+    label = label or f'({k}={v})'
+
+    if k.endswith(suffix_int):
+        k = _rm_suffix(k, suffix_int)
+        v = k if v is Ellipsis else v
+        v = int(v)
+    elif k.endswith(suffix_float):
+        k = _rm_suffix(k, suffix_float)
+        v = k if v is Ellipsis else v
+        v = float(v)
+    elif k.endswith(suffix_list):
+        assert list_separator
+        k = _rm_suffix(k, suffix_list)
+        v = k if v is Ellipsis else v
+        v = v.split(list_separator)
+    elif k.endswith(suffix_bool):
+        k = _rm_suffix(k, suffix_bool)
+        v = k if v is Ellipsis else v
+        if v in ('yes', 'Yes', 'YES', 'True', 'true', 'TRUE', '1'):
+            v = True
+        elif v in ('no', 'No', 'NO', 'False', 'false', 'FALSE', '0'):
+            v = False
+        elif v in ('None', 'null', 'NULL'):
+            v = None
+        else:
+            raise ValueError(f"unknown bool-convertible value {v} {label}")
+    elif k.endswith(suffix_json):
+        k = _rm_suffix(k, suffix_json)
+        v = k if v is Ellipsis else v
+        v = json.loads(v)
+    else:
+        v = k if v is Ellipsis else v
+
+    return k, v
+
+
 def convert_key_value(
     key: str,
     value: str = ...,
@@ -158,49 +209,27 @@ def convert_key_value(
 
     >>> assert _('1')[1] == '1'
     >>> assert _('1_NUMBER')[1] == 1
-    >>> #assert _('Yes_NUMBER')[1] == 1
     >>> assert _('Yes_FLAG')[1] is True
     """
 
+    kwargs = dict(
+        suffix_int=suffix_int, suffix_float=suffix_float, suffix_list=suffix_list,
+        suffix_bool=suffix_bool, suffix_json=suffix_json,
+        list_separator=list_separator,
+        label=label
+    )
+
+    if value is Ellipsis:  # call conversion once
+        return convert_key_value_step(key, value, **kwargs)
+
     k = key
     v = value
-    label = label or f'({k}={v})'
 
     while True:  # while it is being converted by simple keys
-        # if not isinstance(k, str):
-        #     break
-        
-        if k.endswith(suffix_int):
-            k = _rm_suffix(k, suffix_int)
-            v = k if v is Ellipsis else v
-            v = int(v)
-        elif k.endswith(suffix_float):
-            k = _rm_suffix(k, suffix_float)
-            v = k if v is Ellipsis else v
-            v = float(v)
-        elif k.endswith(suffix_list):
-            assert list_separator
-            k = _rm_suffix(k, suffix_list)
-            v = k if v is Ellipsis else v
-            v = v.split(list_separator)
-        elif k.endswith(suffix_bool):
-            k = _rm_suffix(k, suffix_bool)
-            v = k if v is Ellipsis else v
-            if v in ('yes', 'Yes', 'YES', 'True', 'true', 'TRUE', '1'):
-                v = True
-            elif v in ('no', 'No', 'NO', 'False', 'false', 'FALSE', '0'):
-                v = False
-            elif v in ('None', 'null', 'NULL'):
-                v = None
-            else:
-                raise ValueError(f"unknown bool-convertible value {v} {label}")
-        elif k.endswith(suffix_json):
-            k = _rm_suffix(k, suffix_json)
-            v = k if v is Ellipsis else v
-            v = json.loads(v)
+        k_orig = k
+        k, v = convert_key_value_step(k, v, **kwargs)
 
-        else:  # cannot convert further, stop loop
-            v = k if v is Ellipsis else v
+        if k == k_orig:  # cannot convert further, stop loop
             break
 
     return k, v
