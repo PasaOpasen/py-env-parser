@@ -2,7 +2,7 @@
 source: https://github.com/PasaOpasen/py-env-parser
 """
 
-from typing import Optional, Dict, Any, Sequence
+from typing import Optional, Dict, Any, Sequence, Tuple
 
 import os
 import json
@@ -120,6 +120,78 @@ def _translate_str(string: str, replaces: Dict[str, str]) -> str:
         string = string.replace(k, v)
     return string
 
+
+def convert_key_value(
+    key: str,
+    value: str,
+    label: str = '',
+
+    suffix_int: str = '_NUMBER',
+    suffix_float: str = '_FLOAT',
+    suffix_bool: str = '_FLAG',
+    suffix_list: str = '_LIST',
+    suffix_json: str = '_JSON',
+    list_separator: str = ';',
+) -> Tuple[str, Any]:
+    """
+    converts string key=value pair to shorter key and cast value according to cast suffixes
+    Args:
+        key:
+        value:
+        label: this pair label to show in error cases
+        suffix_int:
+        suffix_float:
+        suffix_bool:
+        suffix_list:
+        suffix_json:
+        list_separator:
+
+    Returns:
+        - key without applied suffixes
+        - cast value
+
+    >>> _ = convert_key_value
+    >>> assert _('a', '1') == ('a', '1')
+    >>> assert _('a_NUMBER', '1') == ('a', 1)
+    >>> assert _('a_LIST', '1;2;3') == ('a', ['1', '2', '3'])
+    >>> assert _('a_NUMBER_FLAG', 'YES') == ('a', 1)
+    """
+
+    k = key
+    v = value
+    label = label or f'({k}={v})'
+
+    while True:  # while it is being converted by simple keys
+        if k.endswith(suffix_int):
+            k = _rm_suffix(k, suffix_int)
+            v = int(v)
+        elif k.endswith(suffix_float):
+            k = _rm_suffix(k, suffix_float)
+            v = float(v)
+        elif k.endswith(suffix_list):
+            assert list_separator
+            k = _rm_suffix(k, suffix_list)
+            v = v.split(list_separator)
+        elif k.endswith(suffix_bool):
+            k = _rm_suffix(k, suffix_bool)
+            if v in ('yes', 'Yes', 'YES', 'True', 'true', 'TRUE', '1'):
+                v = True
+            elif v in ('no', 'No', 'NO', 'False', 'false', 'FALSE', '0'):
+                v = False
+            elif v in ('None', 'null', 'NULL'):
+                v = None
+            else:
+                raise ValueError(f"unknown bool-convertible value {v} {label}")
+        elif k.endswith(suffix_json):
+            k = _rm_suffix(k, suffix_json)
+            v = json.loads(v)
+
+        else:  # cannot convert further, stop loop
+            break
+
+    return k, v
+
+
 #endregion
 
 
@@ -132,6 +204,7 @@ def parse_vars(
     prefix: str,
     source: Optional[Dict[str, str]] = None,
     initial_vars: Optional[Dict[str, Any]] = None,
+
     suffix_int: str = '_NUMBER',
     suffix_float: str = '_FLOAT',
     suffix_bool: str = '_FLAG',
@@ -139,6 +212,7 @@ def parse_vars(
     suffix_list_append: str = '_LIST_APPEND',
     suffix_json: str = '_JSON',
     list_separator: str = ';',
+
     dict_level_separator: str = '__',
     names_replaces: Optional[Dict[str, str]] = None
 ) -> Dict[str, Any]:
@@ -201,33 +275,12 @@ def parse_vars(
         k_orig = prefix + k
         v_orig = v
 
-        while True:  # while it is being converted by simple keys
-            if k.endswith(suffix_int):
-                k = _rm_suffix(k, suffix_int)
-                v = int(v)
-            elif k.endswith(suffix_float):
-                k = _rm_suffix(k, suffix_float)
-                v = float(v)
-            elif k.endswith(suffix_list):
-                assert list_separator
-                k = _rm_suffix(k, suffix_list)
-                v = v.split(list_separator)
-            elif k.endswith(suffix_bool):
-                k = _rm_suffix(k, suffix_bool)
-                if v in ('yes', 'Yes', 'YES', 'True', 'true', 'TRUE', '1'):
-                    v = True
-                elif v in ('no', 'No', 'NO', 'False', 'false', 'FALSE', '0'):
-                    v = False
-                elif v in ('None', 'null', 'NULL'):
-                    v = None
-                else:
-                    raise ValueError(f"unknown bool-convertible value {v} ({k_orig}={v_orig})")
-            elif k.endswith(suffix_json):
-                k = _rm_suffix(k, suffix_json)
-                v = json.loads(v)
-
-            else:  # cannot convert further, stop loop
-                break
+        k, v = convert_key_value(
+            k, v, label=f"({k_orig}={v_orig})",
+            suffix_bool=suffix_bool, suffix_int=suffix_int, suffix_float=suffix_float,
+            suffix_list=suffix_list,
+            suffix_json=suffix_json
+        )
 
         #
         # more heavy logic
