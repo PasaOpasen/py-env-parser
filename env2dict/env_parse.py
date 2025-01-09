@@ -201,8 +201,7 @@ def parse_vars(
         k_orig = prefix + k
         v_orig = v
 
-        progress = True
-        while progress:  # while it is being converted by simple keys
+        while True:  # while it is being converted by simple keys
             if k.endswith(suffix_int):
                 k = _rm_suffix(k, suffix_int)
                 v = int(v)
@@ -222,16 +221,13 @@ def parse_vars(
                 elif v in ('None', 'null', 'NULL'):
                     v = None
                 else:
-                    raise ValueError(
-                        f"unknown bool-convertible value {v} for variable {prefix}{k}{suffix_bool} "
-                        f"({k_orig}={v_orig})"
-                    )
+                    raise ValueError(f"unknown bool-convertible value {v} ({k_orig}={v_orig})")
             elif k.endswith(suffix_json):
                 k = _rm_suffix(k, suffix_json)
                 v = json.loads(v)
 
             else:  # cannot convert further, stop loop
-                progress = False
+                break
 
         #
         # more heavy logic
